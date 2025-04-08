@@ -14,16 +14,107 @@
 </head>
 
 <body>
+    <div class="p-2">
+        <h1> Lista de Tarefas</h1>
+        <form class="form-cadastro">
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" id="task-title" name="title" placeholder="Recipient's username"
+                    aria-label="Recipient's username" aria-describedby="button-addon2">
+                <button class="btn btn-outline-secondary btn-add" type="submit" id="button-addon2">Button</button>
+            </div>
+        </form>
+
+        <ul class="lista-tarefas">
+            {% for task in tasks %}
+            <li class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ task.id }}"
+                data-completed="{{task.completed}}">
+                <span class="{% if task.completed %}text-decoration-line-through{% endif %}">{{ task.title }}</span>
+                <div>
+                    <button class="btn-complete btn btn-success">✔</button>
+                    <button class="delete-btn btn btn-warning">❌</button>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
 
 
-    <ul>
-        {% for task in tasks %}
-        <li>{{task.tittle}}</li>
-        {% endfor %}
-    </ul>
+    </div>
+
+
+    <script>
+        document.querySelector(".form-cadastro").addEventListener('submit', function (event) {
+            event.preventDefault();
+            let titulo = document.getElementById('task-title').value //pega o valor do input com ID task-title
+            //alert('Nada não')
+            fetch('tasks', {
+                method: 'POST',
+                headers: { "Content-Type": 'application/json', "X-CSRFToken": getCSRFToken() },
+                body: JSON.stringify({ title: titulo })
+
+            }).then(response => {
+                window.location.reload()
+            })
+
+        })
+
+        function getCSRFToken() {
+            const cookieValue = document.cookie.match(/csrftoken=([^;]+)/);
+            return cookieValue ? cookieValue[1] : "";
+        }
+        const taskList = document.querySelector(".lista-tarefas")
+        taskList.addEventListener("click", function (event) {
+            if (event.target.classList.contains("btn-complete")) {
+                const taskItem = event.target.closest("li");
+                const taskId = taskItem.dataset.id;
+                const stt = taskItem.dataset.completed;
+                const newStatus = !(stt == 'True')
+                //alert(stt)
+                fetch(
+                    `/tasks/${taskId}/`,
+                    {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json", "X-CSRFToken": getCSRFToken() },
+                        body: JSON.stringify({ completed: newStatus }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("erro no teste", taskItem.querySelector("span").classList)
+                        document.location.reload()
+                    });
 
 
 
+
+
+
+            }
+
+
+            // Excluir tarefa (DELETE)
+            taskList.addEventListener("click", function (event) {
+
+                if (event.target.classList.contains("delete-btn")) {
+                    const taskItem = event.target.closest("li");
+                    const taskId = taskItem.dataset.id;
+                    fetch(`/tasks/${taskId}/delete`, { method: "DELETE", headers: { "X-CSRFToken": getCSRFToken() } })
+                        .then(response => {
+                            if (response.status === 204) {
+                                taskItem.remove();
+                            }
+                        });
+                }
+
+            });
+
+
+        });
+
+
+
+
+
+
+    </script>
 </body>
 
 </html>
